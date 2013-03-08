@@ -22,12 +22,16 @@
 import sys
 import getpass
 
-from ansible.runner import Runner
-import ansible.constants as C
-from ansible import utils
-from ansible import errors
-from ansible import callbacks
-from ansible import inventory
+try:
+    from ansible.runner import Runner
+    import ansible.constants as C
+    from ansible import utils
+    from ansible import errors
+    from ansible import callbacks
+    from ansible import inventory
+except Exception, e:
+    print >> sys.stderr, "Error: Corrupt installation: %s" % e
+    sys.exit(128)
 
 ########################################################
 
@@ -80,7 +84,12 @@ class Cli(object):
 
         pattern = args[0]
 
-        inventory_manager = inventory.Inventory(options.inventory)
+        try:
+            inventory_manager = inventory.Inventory(options.inventory)
+        except Exception, e:
+            print >> sys.stderr, "Error loading inventory(%s): %s" % (options.inventory, e)
+            sys.exit(1)
+
         if options.subset:
             inventory_manager.subset(options.subset)
         hosts = inventory_manager.list_hosts(pattern)
@@ -152,7 +161,11 @@ class Cli(object):
 
 if __name__ == '__main__':
     cli = Cli()
-    (options, args) = cli.parse()
+    try:
+        (options, args) = cli.parse()
+    except Exception, e:
+        print >> sys.stderr, "Error parsing options: %s" % e
+        sys.exit(1)
     try:
         (runner, results) = cli.run(options, args)
         for result in results['contacted'].values():
